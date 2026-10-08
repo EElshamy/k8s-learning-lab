@@ -55,7 +55,38 @@ DaemonSet
 Monitoring
 ```
 
+## Labs
+
+### Lab 01 — Nginx on Kubernetes
+- Deployment
+- Pods and replicas
+- Service / NodePort
+- Labels and selectors
+- Self-healing
+
+### Lab 02 — Docker + Kubernetes Static Website
+- Dockerfile
+- Custom Docker image
+- Minikube image loading
+- Kubernetes Deployment
+- Service / NodePort
+- Rolling update and rollback
+
 ## Repository Structure
+
+```text
+k8s-learning-lab/
+├── labs/
+│   ├── 01-nginx-kubernetes/
+│   └── 02-docker-kubernetes-static-website/
+├── 01-pods/
+├── 02-deployments/
+├── 03-services/
+├── 04-configmaps/
+├── 05-ingress/
+└── 06-storage/
+```
+
 
 ```text
 k8s-learning-lab/
