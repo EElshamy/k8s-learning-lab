@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: config-demo
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: config-demo
+
+  template:
+    metadata:
+      labels:
+        app: config-demo
+
+    spec:
+      containers:
+        - name: config-demo
+          image: busybox:1.36
+
+          command:
+            - sh
+            - -c
+            - |
+              echo "Application started"
+              echo "APP_NAME=$APP_NAME"
+              echo "APP_ENV=$APP_ENV"
+              echo "APP_VERSION=$APP_VERSION"
+              sleep 3600
+
+          env:
+            - name: APP_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: APP_NAME
