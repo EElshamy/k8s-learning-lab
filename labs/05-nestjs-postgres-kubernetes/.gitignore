@@ -1,0 +1,5 @@
+postgres-secret.yaml
+nestjs-secret.yaml
+nestjs-app/node_modules/
+nestjs-app/dist/
+nestjs-app/.env
