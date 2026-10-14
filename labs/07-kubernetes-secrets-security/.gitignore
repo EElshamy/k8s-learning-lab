@@ -1,0 +1,7 @@
+# Local Secret manifest containing lab values
+secret.yaml
+
+# Environment files
+.env
+.env.*
+!.env.example
