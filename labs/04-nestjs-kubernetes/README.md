@@ -1,157 +1,65 @@
 # Lab 04 — NestJS + Docker + Kubernetes
 
-This lab deploys a NestJS application to Kubernetes using a custom Docker image.
+**Goal:** package a NestJS API into a container and deploy multiple replicas.
 
 ## Architecture
 
-```
-NestJS source code
-       ↓
-   Dockerfile
-       ↓
-Docker image: nestjs-k8s-app:v1
-       ↓
-     Minikube
-       ↓
-   Deployment
-       ↓
-   2 Pods
-       ↓
-    Service
-       ↓
-   Browser
-```
+~~~mermaid
+flowchart TD
+  SRC["NestJS source"] --> IMG["Docker image"]
+  IMG --> MK["Minikube image cache"]
+  MK --> DEP["Deployment"]
+  DEP --> RS["ReplicaSet"]
+  RS --> P1["NestJS Pod 1"]
+  RS --> P2["NestJS Pod 2"]
+  CLIENT["Client"] --> SVC["Kubernetes Service"]
+  SVC --> P1
+  SVC --> P2
+~~~
 
-## What I learned
+## Workflow
 
-- Create and run a NestJS application locally
-- Containerize NestJS with Docker
-- Build a custom Docker image
-- Run the image as a Docker container
-- Load a local Docker image into Minikube
-- Create a Kubernetes Deployment
-- Run multiple NestJS Pods with replicas
-- Use labels and selectors
-- Create a Kubernetes NodePort Service
-- Route traffic from the Service to the NestJS Pods
-- Test the application through Minikube
+1. Build and test the image locally.
+2. Load the image into Minikube.
+3. Apply the Deployment and Service.
+4. Verify Pod readiness and Service endpoints.
+5. Access the application through Minikube.
 
-## Docker
+## Build and test
 
-Build the image:
-
-```bash
+~~~bash
 docker build -t nestjs-k8s-app:v1 .
-```
+docker run --rm -p 3000:3000 nestjs-k8s-app:v1
+~~~
 
-Run locally:
+In another terminal, test the route configured by the app, for example:
 
-```bash
-docker run -d \
-  --name nestjs-k8s-test \
-  -p 3000:3000 \
-  nestjs-k8s-app:v1
-```
+~~~bash
+curl -i http://localhost:3000
+~~~
 
-Test:
+Stop the local foreground container before proceeding.
 
-```bash
-curl http://localhost:3000
-```
+## Deploy
 
-Clean up:
-
-```bash
-docker stop nestjs-k8s-test
-docker rm nestjs-k8s-test
-```
-
-## Minikube
-
-Load the image:
-
-```bash
+~~~bash
 minikube image load nestjs-k8s-app:v1
-minikube image ls | grep nestjs-k8s-app
-```
-
-## Kubernetes Deployment
-
-Apply:
-
-```bash
 kubectl apply -f deployment.yaml
-```
-
-Check the Deployment:
-
-```bash
-kubectl get deployment
-```
-
-Check the Pods:
-
-```bash
-kubectl get pods -l app=nestjs-k8s-app
-```
-
-The Deployment runs two Pods.
-
-## Kubernetes Service
-
-Apply:
-
-```bash
 kubectl apply -f service.yaml
-```
+kubectl get pods -l app=nestjs-k8s-app
+kubectl get svc
+kubectl get endpointslices
+~~~
 
-Check the Service:
+## Key concepts
 
-```bash
-kubectl get svc nestjs-service
-```
+- The image packages the runtime and application.
+- The Deployment maintains the desired replica count.
+- The Service routes traffic to Pods matching its selector.
+- The application must listen on the expected container port, commonly on 0.0.0.0 inside the container.
 
-Check the endpoints:
+## Troubleshooting
 
-```bash
-kubectl get endpoints nestjs-service
-```
-
-Open the application:
-
-```bash
-minikube service nestjs-service
-```
-
-The application should return:
-
-```
-Hello World!
-```
-
-## Important Concepts
-
-### Deployment
-
-The Deployment manages the desired number of NestJS Pods.
-
-### Pods
-
-The Pods run the NestJS Docker container.
-
-### Service
-
-The Service provides a stable network endpoint and sends traffic to Pods matching:
-
-```yaml
-selector:
-  app: nestjs-k8s-app
-```
-
-### NodePort
-
-NodePort exposes the Service outside the Kubernetes cluster. Minikube provides a local URL/tunnel when using:
-
-```bash
-minikube service nestjs-service
-```
+- Container exits: inspect kubectl logs for the Pod.
+- Connection refused: check the app's listen address and port.
+- No endpoints: compare Service selector with Pod labels.
