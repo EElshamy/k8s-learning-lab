@@ -1,116 +1,82 @@
-# Kubernetes Learning Lab
+# Kubernetes Learning Lab 🚀
 
-Hands-on Kubernetes learning repository.
+![Kubernetes](https://img.shields.io/badge/Kubernetes-learning-326CE5?logo=kubernetes&logoColor=white)
+![Minikube](https://img.shields.io/badge/Environment-Minukube%20%7C%20macOS-2F6DB3)
+![Hands-on labs](https://img.shields.io/badge/Labs-01--10-success)
 
-This repository documents my Kubernetes journey with practical manifests, commands, and notes that I can run locally with Minikube and kubectl.
+A practical Kubernetes learning journal. Each lab includes manifests, commands, explanations, expected results, diagrams, and troubleshooting notes.
 
-## Current Topics
+## Learning roadmap
 
-- [x] Pods
-- [x] Deployments
-- [x] Services
-- [x] ConfigMaps
-- [x] Ingress
-- [x] Storage
-
-## Environment
-
-- Kubernetes
-- kubectl
-- Minikube
-- Docker
-- macOS
-
-## Learning Path
-
-```text
-Pod
-  ↓
-Deployment
-  ↓
-Service
-  ↓
-ConfigMap
-  ↓
-Ingress
-  ↓
-Storage
-  ↓
-Secrets
-  ↓
-Requests & Limits
-  ↓
-Health Probes
-  ↓
-Namespaces
-  ↓
-HPA
-  ↓
-RBAC
-  ↓
-StatefulSet
-  ↓
-DaemonSet
-  ↓
-Monitoring
-```
+~~~mermaid
+flowchart TD
+  A["01 · NGINX basics"] --> B["02 · Docker static website"]
+  B --> C["03 · ConfigMaps"]
+  C --> D["04 · NestJS"]
+  D --> E["05 · NestJS + PostgreSQL"]
+  E --> F["06 · Health probes"]
+  F --> G["07 · Secrets"]
+  G --> H["08 · RBAC"]
+  H --> I["09 · Namespaces & quotas"]
+  I --> J["10 · Services & networking"]
+  J -. next .-> K["11 · DNS & Service Discovery"]
+~~~
 
 ## Labs
 
-### Lab 01 — Nginx on Kubernetes
-- Deployment
-- Pods and replicas
-- Service / NodePort
-- Labels and selectors
-- Self-healing
+| Lab | Topic | What you practice |
+|---|---|---|
+| [01 — NGINX on Kubernetes](labs/01-nginx-kubernetes/) | First workload | Deployment, Pods, replicas, Service, labels |
+| [02 — Docker static website](labs/02-docker-kubernetes-static-website/) | Custom image | Dockerfile, build/load image, Deployment, Service |
+| [03 — ConfigMaps](labs/03-configmap-environment-variables/) | Configuration | Non-sensitive settings, environment variables |
+| [04 — NestJS](labs/04-nestjs-kubernetes/) | API deployment | Docker, replicas, Service networking |
+| [05 — NestJS + PostgreSQL](labs/05-nestjs-postgres-kubernetes/) | Database integration | Secrets, ConfigMaps, Service DNS, PVC |
+| [06 — Health checks](labs/06-health-checks-self-healing/) | Reliability | Startup, readiness, liveness, self-healing |
+| [07 — Secrets & security](labs/07-kubernetes-secrets-security/) | Sensitive configuration | Secret references, safe handling |
+| [08 — RBAC](labs/08-rbac-service-accounts/) | Authorization | ServiceAccount, Role, RoleBinding, least privilege |
+| [09 — Namespaces](labs/09-namespaces-resource-isolation/) | Resource boundaries | Namespace, ResourceQuota, LimitRange |
+| [10 — Services & networking](labs/10-services-networking/) | Traffic routing | ClusterIP, NodePort, selectors, EndpointSlices |
 
-### Lab 02 — Docker + Kubernetes Static Website
-- Dockerfile
-- Custom Docker image
-- Minikube image loading
-- Kubernetes Deployment
-- Service / NodePort
-- Rolling update and rollback
+## How Kubernetes traffic flows
 
-## Repository Structure
+~~~mermaid
+flowchart LR
+  U["Client"] --> S["Service"]
+  S --> P1["Pod A"]
+  S --> P2["Pod B"]
+  D["Deployment"] -. maintains .-> P1
+  D -. maintains .-> P2
+  L["Pod labels"] -. matched by .-> S
+~~~
 
-```text
-k8s-learning-lab/
-├── labs/
-│   ├── 01-nginx-kubernetes/
-│   └── 02-docker-kubernetes-static-website/
-├── 01-pods/
-├── 02-deployments/
-├── 03-services/
-├── 04-configmaps/
-├── 05-ingress/
-└── 06-storage/
-```
+A Deployment maintains the desired number of Pods. A Service offers a stable endpoint and selects backend Pods using labels. The route used to access a Service depends on its type and the cluster environment.
 
+## Start the local environment
 
-```text
-k8s-learning-lab/
-├── 01-pods/
-├── 02-deployments/
-├── 03-services/
-├── 04-configmaps/
-├── 05-ingress/
-└── 06-storage/
-```
+~~~bash
+minikube start
+kubectl config current-context
+kubectl get nodes
+~~~
 
-## Basic Commands
+Expected: the context points to Minikube and its node is Ready.
 
-```bash
+## General workflow
+
+From the relevant lab directory, follow its README. Common commands:
+
+~~~bash
+kubectl apply -f <manifest>.yaml
 kubectl get pods
-kubectl get deployments
-kubectl get services
-kubectl get ingress
-kubectl get pvc
+kubectl describe <resource> <name>
+kubectl logs <pod-name>
+~~~
 
-kubectl apply -f <file>.yaml
-kubectl delete -f <file>.yaml
-```
+Review manifests before applying them. Avoid broad deletion commands on a cluster that contains workloads from other labs.
 
-## Goal
+## Progress
 
-Build a practical Kubernetes reference from fundamentals to production-oriented concepts, with every topic backed by a working lab.
+- [x] Labs 01–10 completed and documented
+- [ ] Lab 11 onward: DNS, Ingress, storage, scaling, monitoring, and CI/CD
+
+Diagrams are written in Mermaid and rendered directly by GitHub Markdown.
