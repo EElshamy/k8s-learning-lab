@@ -1,98 +1,69 @@
-# Lab 09 — Kubernetes Namespaces & Resource Isolation
+# Lab 09 — Namespaces & Resource Isolation
 
-## Objectives
+**Goal:** logically scope resources and enforce resource budgets in a namespace.
 
-- Create a dedicated namespace for lab resources.
-- Deploy an NGINX application in that namespace.
-- Apply a ResourceQuota to cap aggregate namespace resource usage.
-- Apply a LimitRange to set default and permitted per-container resources.
-- Verify namespace scoping and test quota enforcement.
+## Architecture
 
-## Files
+~~~mermaid
+flowchart TD
+  CL["Kubernetes Cluster"] --> NS1["default namespace"]
+  CL --> NS2["lab-09 namespace"]
+  NS2 --> DEP["NGINX Deployment"]
+  DEP --> P1["Pod 1"]
+  DEP --> P2["Pod 2"]
+  NS2 --> RQ["ResourceQuota: namespace totals"]
+  NS2 --> LR["LimitRange: container defaults and bounds"]
+  RQ -. admission check .-> P1
+  LR -. applies defaults .-> P1
+~~~
 
-- `deployment.yaml` — NGINX Deployment with two replicas and explicit resources.
-- `resourcequota.yaml` — aggregate namespace quota.
-- `limitrange.yaml` — default, minimum, and maximum container resources.
-- `test-pod.yaml` — Pod without explicit resources to test LimitRange defaults.
-- `quota-test.yaml` — additional Pod with explicit resources.
-- `quota-exceed-test.yaml` — deliberate quota-exceed test; expected to be rejected.
+## What each resource does
 
-## Run the lab
+- **Namespace:** logical scope for namespaced resources.
+- **ResourceQuota:** caps aggregate resource usage and/or object counts.
+- **LimitRange:** sets default requests/limits and per-container minimum/maximum values.
 
-Create the namespace:
+## Apply
 
-```bash
+If lab-09 already exists, do not recreate it.
+
+~~~bash
 kubectl create namespace lab-09
-```
-
-Apply the resources:
-
-```bash
 kubectl apply -f deployment.yaml
 kubectl apply -f resourcequota.yaml
 kubectl apply -f limitrange.yaml
 kubectl apply -f test-pod.yaml
 kubectl apply -f quota-test.yaml
-```
+~~~
 
-Inspect the resources:
+## Verify
 
-```bash
-kubectl get all -n lab-09
+~~~bash
+kubectl get pods -n lab-09
 kubectl describe resourcequota lab-09-quota -n lab-09
 kubectl describe limitrange lab-09-limits -n lab-09
 kubectl describe pod nginx-default-resources -n lab-09
-```
-
-## ResourceQuota test
-
-Apply the deliberate exceed-test:
-
-```bash
-kubectl apply -f quota-exceed-test.yaml
-```
-
-Expected result: Kubernetes rejects the Pod with a `Forbidden` / `exceeded quota` message when its resource requests or limits would exceed the namespace's remaining quota. This rejection is the expected outcome of the test, not an application failure.
-
-## LimitRange test
-
-The Pod in `test-pod.yaml` does not specify resources. The LimitRange should assign these defaults:
-
-| Resource | Default |
-|---|---:|
-| CPU request | 100m |
-| Memory request | 64Mi |
-| CPU limit | 250m |
-| Memory limit | 128Mi |
-
-Verify with:
-
-```bash
-kubectl describe pod nginx-default-resources -n lab-09
-```
-
-## Namespace isolation check
-
-```bash
 kubectl get pods -n default
-kubectl get pods -n lab-09
-```
+~~~
 
-Pods created in `lab-09` appear in that namespace and are not listed by a query scoped to `default`.
+The Pod without explicit resource settings should receive the configured LimitRange defaults: CPU request 100m, memory request 64Mi, CPU limit 250m, and memory limit 128Mi.
+
+## Test quota enforcement
+
+~~~bash
+kubectl apply -f quota-exceed-test.yaml
+~~~
+
+Expected: Kubernetes rejects the Pod with an exceeded quota message if the request would exceed the quota. This is a successful negative test.
+
+## Important distinction
+
+Namespaces provide logical scoping, not complete security isolation. Use RBAC for API authorization and NetworkPolicies with a supporting network plugin for network controls.
 
 ## Cleanup
 
-Only run this if you want to remove all resources created for this lab:
+Deleting the lab namespace deletes all namespaced resources inside it. Only run this if you intend to remove the entire lab:
 
-```bash
+~~~bash
 kubectl delete namespace lab-09
-```
-
-**Warning:** deleting the namespace deletes all resources inside it.
-
-## Key takeaways
-
-- Namespaces provide logical scoping for Kubernetes resources.
-- ResourceQuota limits aggregate resource consumption within a namespace.
-- LimitRange can assign defaults and enforce per-container resource bounds.
-- RBAC and NetworkPolicies provide additional controls; a namespace alone is not a complete security boundary.
+~~~
