@@ -1,129 +1,53 @@
 # Lab 05 — NestJS + PostgreSQL on Kubernetes
 
-This lab runs PostgreSQL and a NestJS API in Minikube. It demonstrates Kubernetes Deployments, Services, Secrets, ConfigMaps, PersistentVolumeClaims, in-cluster DNS, and database connectivity.
+**Goal:** connect an API to PostgreSQL using Kubernetes networking and persistent storage.
 
 ## Architecture
 
-```text
-Client -> nestjs-postgres-service (NodePort) -> NestJS Pod
-                                          -> postgres:5432 -> postgres Service (ClusterIP)
-                                                           -> PostgreSQL Pod -> postgres-pvc (1Gi)
-```
+~~~mermaid
+flowchart TD
+  CLIENT["Client"] --> API_SVC["NestJS Service"]
+  API_SVC --> API["NestJS Pod"]
+  API -->|"postgres:5432"| DB_SVC["PostgreSQL Service"]
+  DB_SVC --> DB["PostgreSQL Pod"]
+  DB --> PVC["PersistentVolumeClaim"]
+  PVC --> PV["Persistent storage"]
+  CM["ConfigMap: non-secret settings"] --> API
+  SEC["Secret: credentials"] --> API
+  SEC --> DB
+~~~
 
-## Files
+## Key concepts
 
-- `postgres-deployment.yaml`: PostgreSQL Deployment.
-- `postgres-service.yaml`: internal-only Service for PostgreSQL.
-- `postgres-pvc.yaml`: persistent storage request.
-- `postgres-secret.example.yaml`: template for PostgreSQL credentials.
-- `nestjs-configmap.yaml`: non-sensitive database connection settings.
-- `nestjs-secret.example.yaml`: template for credentials consumed by NestJS.
-- `nestjs-deployment.yaml`: NestJS Deployment.
-- `nestjs-service.yaml`: NodePort Service for the API.
-- `nestjs-app/`: minimal NestJS source and Docker build files.
+- The API connects to the PostgreSQL Service name, not a Pod IP.
+- A Service gives the database a stable in-cluster endpoint.
+- A ConfigMap stores non-sensitive settings.
+- A Secret stores credential values.
+- A PVC requests storage intended to persist beyond a Pod replacement.
 
-> The example Secret files contain demo placeholders only. Copy them to the filenames expected by the manifests, set matching credentials, and do not commit those local Secret files.
+## Important files
 
-## Prerequisites
+Review the manifests in this directory, including PostgreSQL Deployment/Service, PVC, API Deployment/Service, ConfigMap, and example Secret files.
 
-- Docker, Minikube, kubectl
-- Node.js and npm (only needed to build the app)
+## Apply and verify
 
-## 1. Prepare local Secrets
+Apply storage and configuration resources first, then the database and API workloads. If Secret files are examples, copy them to local ignored files and insert lab-only credentials; never commit real credentials.
 
-From this directory:
+~~~bash
+kubectl get pods
+kubectl get svc
+kubectl get pvc
+kubectl describe pod <postgres-pod>
+kubectl logs deployment/<api-deployment-name>
+~~~
 
-```bash
-cp postgres-secret.example.yaml postgres-secret.yaml
-cp nestjs-secret.example.yaml nestjs-secret.yaml
-```
+Expected: the PVC becomes Bound, PostgreSQL becomes Ready, and the API connects using the Service DNS name and port 5432.
 
-Edit both files. Ensure `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB` in `postgres-secret.yaml` match `DB_USER`, `DB_PASSWORD`, and `DB_NAME` provided to NestJS. The committed examples use demo values and must not be used in production. The real local files are ignored by Git.
+## Troubleshooting
 
-## 2. Deploy PostgreSQL
+- Connection refused: inspect DB readiness and Service endpoints.
+- Authentication failed: compare the username/password configuration on both sides.
+- DNS lookup fails: confirm the Service name and namespace.
+- Data is not persistent: confirm PostgreSQL writes to the mounted volume.
 
-```bash
-kubectl apply -f postgres-secret.yaml
-kubectl apply -f postgres-pvc.yaml
-kubectl apply -f postgres-deployment.yaml
-kubectl apply -f postgres-service.yaml
-kubectl get pods,pvc,svc
-```
-
-Wait until the PostgreSQL Pod is `1/1 Running` and the PVC is `Bound`.
-
-## 3. Build and load the NestJS image
-
-```bash
-cd nestjs-app
-npm install
- docker build -t nestjs-postgres-app:v1 .
-minikube image load nestjs-postgres-app:v1
-cd ..
-```
-
-## 4. Deploy NestJS
-
-```bash
-kubectl apply -f nestjs-configmap.yaml
-kubectl apply -f nestjs-secret.yaml
-kubectl apply -f nestjs-deployment.yaml
-kubectl apply -f nestjs-service.yaml
-kubectl get deployments,services,pods
-kubectl logs deployment/nestjs-postgres-app
-```
-
-The logs should include `PostgreSQL connection established successfully`.
-
-## 5. Test database connectivity
-
-```bash
-kubectl exec deploy/postgres -- sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT version();"'
-minikube service nestjs-postgres-service --url
-```
-
-On macOS with the Docker driver, keep the `minikube service ... --url` terminal open while testing. Use the returned URL with `/db-version`:
-
-```bash
-curl http://127.0.0.1:<PORT>/db-version
-```
-
-Expected response contains a PostgreSQL version in JSON.
-
-## 6. Verify persistent storage
-
-Create a sample table and row:
-
-```bash
-kubectl exec deploy/postgres -- sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "CREATE TABLE IF NOT EXISTS lab_test (id SERIAL PRIMARY KEY, message TEXT); INSERT INTO lab_test (message) VALUES ('\''Data survives Pod restart'\''); SELECT * FROM lab_test;"'
-```
-
-Delete only the PostgreSQL Pod; its Deployment will create a replacement:
-
-```bash
-kubectl delete pod -l app=postgres
-kubectl get pods -l app=postgres -w
-```
-
-After the replacement Pod becomes Ready, query the data again:
-
-```bash
-kubectl exec deploy/postgres -- sh -c 'PGPASSWORD="$POSTGRES_PASSWORD" psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT * FROM lab_test;"'
-```
-
-The row should remain because the database uses the PVC. Do not delete the PVC if you need to keep the data.
-
-## Concepts learned
-
-- Deploying a stateful database and stateless API as separate workloads.
-- Routing inside the cluster using a Kubernetes Service and DNS name `postgres`.
-- Separating non-sensitive configuration (ConfigMap) from credentials (Secret).
-- Keeping database files outside the Pod lifecycle with a PVC.
-- Verifying readiness, logs, HTTP API responses, and data persistence.
-
-## Security and production notes
-
-- Never commit real credentials to Git. The example Secret files are templates for local learning.
-- Kubernetes Secrets are not automatically encrypted merely because they are Secrets; production clusters need appropriate encryption-at-rest and RBAC controls.
-- A single PostgreSQL replica on Minikube is for learning, not high availability.
-- PVCs are not backups. Keep independent backups for important data.
+**Security:** Kubernetes Secrets need appropriate RBAC and encryption-at-rest configuration; Base64 is encoding, not encryption.
