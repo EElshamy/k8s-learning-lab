@@ -1,53 +1,55 @@
 # Lab 07 — Kubernetes Secrets & Security
 
-## Goals
+**Goal:** provide sensitive configuration to a workload while reducing accidental exposure.
 
-- Create a Kubernetes Secret from a YAML manifest.
-- Inject Secret keys into a Pod as environment variables.
-- Verify that values are available without printing the secret values.
-- Observe what happens when a Pod references a Secret that does not exist.
-- Keep local secret manifests out of Git.
+## Secret delivery flow
 
-## Files
+~~~mermaid
+flowchart TD
+  OP["Operator creates Secret"] --> API["Kubernetes API"]
+  API --> POD["Pod references Secret"]
+  POD --> ENV["Environment variable or mounted file"]
+  ENV --> APP["Application reads credential"]
+  RBAC["RBAC permissions"] -. limits access .-> API
+~~~
 
-- `.gitignore`: excludes the local `secret.yaml` and environment files.
-- `secret.example.yaml`: safe template only; replace the placeholder values locally before applying.
-- `pod.yaml`: reads `DB_USERNAME` and `DB_PASSWORD` from the `app-secret` Secret.
+## Key concepts
 
-## Practice
+- A Secret stores sensitive values such as passwords and tokens.
+- A Pod references a Secret by name and key.
+- RBAC should limit who can read or modify Secret objects.
+- Base64 encoding is not encryption.
+- Never commit real credentials or print them into logs.
 
-Create a local `secret.yaml` based on `secret.example.yaml`, then use lab-only values:
+## Apply and inspect
 
-```bash
-kubectl apply -f secret.yaml
-kubectl describe secret app-secret
-kubectl apply -f pod.yaml
-kubectl get pod secret-demo-pod
-```
+Review the actual filenames in this directory and use only lab/test credentials.
 
-Verify that the environment variables exist without printing their contents:
-
-```bash
-kubectl exec secret-demo-pod -- sh -c '
-  test -n "$DB_USERNAME" &&
-  test -n "$DB_PASSWORD" &&
-  echo "DB_USERNAME: configured" &&
-  echo "DB_PASSWORD: configured"
-'
-```
-
-To observe a missing-Secret failure, create a temporary Pod manifest that references a non-existent Secret and inspect it with:
-
-```bash
-kubectl get pod <pod-name>
+~~~bash
+kubectl apply -f <secret-manifest>.yaml
+kubectl apply -f deployment.yaml
+kubectl get secrets
 kubectl describe pod <pod-name>
-```
+~~~
 
-The Pod may show `CreateContainerConfigError` with an event stating that the Secret was not found. Correct the Secret reference and recreate the Pod; most Pod spec fields cannot be changed in place.
+Avoid dumping Secret data with commands such as kubectl get secret -o yaml in shared or recorded terminals.
 
-## Security notes
+## ConfigMap vs Secret
 
-- Kubernetes Secret values are not automatically encrypted just because the resource is a Secret. Base64 is encoding, not encryption.
-- Do not commit real passwords, API keys, or local Secret manifests. This repository includes only a placeholder template.
-- Restrict access with least-privilege RBAC. For production, configure encryption at rest and consider an external secret manager.
-- Avoid printing secret values in terminal output or application logs.
+| ConfigMap | Secret |
+|---|---|
+| Non-sensitive settings | Sensitive values |
+| No confidentiality guarantee | Requires careful access controls and encryption-at-rest configuration |
+
+## Security checklist
+
+- Keep real values out of Git; commit templates only.
+- Restrict Secret access using least-privilege RBAC.
+- Enable encryption at rest where supported.
+- Rotate credentials and consider an external secrets manager for production.
+
+## Troubleshooting
+
+- Secret not found: confirm its name and namespace.
+- Missing environment value: check the key name and Pod reference.
+- Do not paste production credentials into chat or commit them to source control.
