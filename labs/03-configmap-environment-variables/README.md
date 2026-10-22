@@ -1,62 +1,49 @@
-# Lab 03 — ConfigMap + Environment Variables
+# Lab 03 — ConfigMaps & Environment Variables
 
-This lab demonstrates how Kubernetes ConfigMaps can provide application configuration to Pods as environment variables.
+**Goal:** separate non-sensitive application configuration from the container image.
 
-## What I learned
+## Architecture
 
-- Creating and using a ConfigMap
-- Using `envFrom` with `configMapRef` to load all ConfigMap keys
-- Using `env` with `configMapKeyRef` to load a specific key
-- Updating a ConfigMap
-- Restarting a Deployment so new Pods receive updated environment variables
-- Separating application configuration from the container image
+~~~mermaid
+flowchart TD
+  CM["ConfigMap: key/value settings"] -->|"env / envFrom"| POD["Application Pod"]
+  DEP["Deployment"] --> POD
+  POD --> APP["Application reads environment"]
+~~~
 
-## Files
+## Why ConfigMaps?
 
-- `configmap.yaml` — defines the application configuration
-- `deployment.yaml` — runs two BusyBox Pods and injects `APP_NAME` from the ConfigMap
+Without a ConfigMap, configuration is often hard-coded into an image or manifest. A ConfigMap lets you keep settings such as feature flags and non-sensitive URLs separate from application code.
 
-## Commands used
+## Apply and inspect
 
-```bash
+~~~bash
 kubectl apply -f configmap.yaml
-kubectl get configmaps
-kubectl describe configmap app-config
-
 kubectl apply -f deployment.yaml
-kubectl get pods -l app=config-demo
+kubectl get configmaps
+kubectl describe configmap <configmap-name>
+kubectl get pods
+~~~
 
-kubectl exec <pod-name> -- env | grep APP_
+Check the variable names in your Deployment manifest. To inspect the environment in a specific Pod:
 
-kubectl rollout restart deployment config-demo
-kubectl rollout status deployment/config-demo
-```
+~~~bash
+kubectl exec <pod-name> -- printenv
+~~~
 
-## envFrom vs configMapKeyRef
+Avoid printing credentials or other sensitive values into terminal logs.
 
-### envFrom
+## ConfigMap vs Secret
 
-Loads all keys from the referenced ConfigMap:
+| Resource | Use it for |
+|---|---|
+| ConfigMap | Non-sensitive settings |
+| Secret | Passwords, tokens, and other sensitive values |
 
-```yaml
-envFrom:
-  - configMapRef:
-      name: app-config
-```
+Environment variables are populated when a container starts. If a ConfigMap value changes, an existing container's environment does not automatically change; restart or roll out the workload when needed.
 
-### env + configMapKeyRef
+## Troubleshooting
 
-Loads only the selected key:
-
-```yaml
-env:
-  - name: APP_NAME
-    valueFrom:
-      configMapKeyRef:
-        name: app-config
-        key: APP_NAME
-```
-
-## Important note
-
-Changing a ConfigMap does not automatically change environment variables inside already-running Pods. The Pods need to be recreated/restarted to receive the new values.
+- Missing variable: check key names and the env/envFrom reference.
+- ConfigMap not found: the Pod and ConfigMap must be in the same namespace.
+- Updated value not visible: restart/roll out the workload if using environment variables.
