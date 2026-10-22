@@ -1,100 +1,90 @@
-# Lab 10 — Kubernetes Services & Networking
+# Lab 10 — Services & Networking
 
-## Objectives
+**Goal:** expose Pods through stable endpoints and understand how Services discover backend Pods.
 
-- Deploy two NGINX replicas.
-- Expose Pods internally with a ClusterIP Service.
-- Access the application with a NodePort Service.
-- Inspect Service EndpointSlices.
-- Verify that a mismatched selector results in no endpoints.
+## Traffic flow diagram
 
-## Files
+~~~mermaid
+flowchart TD
+  CLIENT["Client / curl Pod"] --> DNS["Kubernetes DNS"]
+  DNS --> SVC["ClusterIP Service :80"]
+  SVC --> EP["EndpointSlice"]
+  EP --> P1["NGINX Pod 10.244.0.29:80"]
+  EP --> P2["NGINX Pod 10.244.0.30:80"]
+  HOST["Host browser"] --> NP["NodePort Service :30082"]
+  NP --> P1
+  NP --> P2
+~~~
 
-- `deployment.yaml` — NGINX Deployment with two replicas.
-- `clusterip-service.yaml` — internal ClusterIP Service.
-- `nodeport-service.yaml` — NodePort Service on port 30082.
-- `selector-test.yaml` — test Service with a deliberately unmatched selector.
+## How selectors work
 
-## 1. Deploy NGINX
+~~~mermaid
+flowchart LR
+  LABEL["Pod label: app=nginx-networking"] --> MATCH{"Matches selector?"}
+  SELECTOR["Service selector: app=nginx-networking"] --> MATCH
+  MATCH -->|Yes| ENDPOINTS["EndpointSlice contains Pod IPs"]
+  MATCH -->|No| EMPTY["No matching endpoints"]
+~~~
 
-```bash
+## Service ports
+
+| Field | Meaning |
+|---|---|
+| port | Port exposed by the Service |
+| targetPort | Port on the selected Pod |
+| nodePort | Port exposed on the node for a NodePort Service |
+
+## Deploy
+
+~~~bash
 kubectl apply -f deployment.yaml
 kubectl rollout status deployment/nginx-networking
-kubectl get pods -l app=nginx-networking -o wide
-```
-
-## 2. Test ClusterIP
-
-```bash
 kubectl apply -f clusterip-service.yaml
-kubectl get service nginx-clusterip
-kubectl get endpointslices -l kubernetes.io/service-name=nginx-clusterip
-```
-
-Test from inside the cluster:
-
-```bash
-kubectl run curl-test --image=curlimages/curl:latest --restart=Never --rm -i -- curl -sS http://nginx-clusterip
-```
-
-Expected result: the default NGINX welcome page HTML.
-
-## 3. Test NodePort
-
-```bash
 kubectl apply -f nodeport-service.yaml
-kubectl get service nginx-nodeport
-```
-
-This lab uses NodePort `30082` because `30080` was already allocated in the cluster.
-
-On macOS with Minikube's Docker driver, the node IP may not be reachable directly from the host. Use a local Minikube service tunnel:
-
-```bash
-minikube service nginx-nodeport --url
-```
-
-Keep that terminal open and visit the URL printed by the command. The URL/port may change between runs.
-
-## 4. Inspect EndpointSlices
-
-```bash
 kubectl get pods -l app=nginx-networking -o wide
-kubectl get service nginx-clusterip nginx-nodeport
+kubectl get svc nginx-clusterip nginx-nodeport
 kubectl get endpointslices -l kubernetes.io/service-name=nginx-clusterip
-```
+~~~
 
-The ClusterIP Service should have endpoints corresponding to the two NGINX Pods.
+## Test ClusterIP from inside the cluster
 
-## 5. Test selector mismatch
+~~~bash
+kubectl run curl-test --image=curlimages/curl:latest --restart=Never --rm -i -- curl -sS http://nginx-clusterip
+~~~
 
-```bash
+Expected: the NGINX welcome page. The temporary Pod is removed because --rm is used.
+
+## Test NodePort on macOS
+
+With Minikube's Docker driver on macOS, the node IP may not be reachable directly from the host. Use:
+
+~~~bash
+minikube service nginx-nodeport --url
+~~~
+
+Keep the command terminal open and visit the local URL it prints. The local port can change between runs.
+
+## Selector mismatch test
+
+~~~bash
 kubectl apply -f selector-test.yaml
 kubectl get endpointslices -l kubernetes.io/service-name=nginx-selector-test
-```
+~~~
 
-The test Service is created, but its EndpointSlice has no endpoints because no Pod has the label `app: does-not-exist`.
+Expected: the test Service exists but has no backend endpoints because its selector matches no Pods.
 
-## Service types
+## Troubleshooting checklist
 
-| Type | Purpose |
-|---|---|
-| ClusterIP | Internal cluster access; the default Service type |
-| NodePort | Exposes a Service through a port on cluster nodes |
-| LoadBalancer | Requests an external load balancer from a supporting environment/provider |
+1. Are Service and Pods in the same namespace?
+2. Does the selector exactly match the Pod labels?
+3. Are the Pods Ready?
+4. Does targetPort match the app's listening port?
+5. Does the EndpointSlice list backend addresses?
+6. Is the access method suitable for the Minikube driver?
 
 ## Cleanup
 
-Only run these commands if you want to remove the resources created by this lab. They target the named resources only.
-
-```bash
+~~~bash
 kubectl delete service nginx-selector-test nginx-nodeport nginx-clusterip
 kubectl delete deployment nginx-networking
-```
-
-## Key takeaways
-
-- A Service provides a stable endpoint for a changing set of Pods.
-- Labels and selectors determine which Pods receive Service traffic.
-- EndpointSlices show the backend endpoints selected for a Service.
-- Minikube networking on macOS can require `minikube service --url` instead of direct access to the node IP.
+~~~
