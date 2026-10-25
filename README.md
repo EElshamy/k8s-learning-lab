@@ -2,7 +2,7 @@
 
 ![Kubernetes](https://img.shields.io/badge/Kubernetes-learning-326CE5?logo=kubernetes&logoColor=white)
 ![Minikube](https://img.shields.io/badge/Environment-Minukube%20%7C%20macOS-2F6DB3)
-![Hands-on labs](https://img.shields.io/badge/Labs-01--12-success)
+![Hands-on labs](https://img.shields.io/badge/Labs-01--13-success)
 
 A practical Kubernetes learning journal. Each lab includes manifests, commands, explanations, expected results, diagrams, and troubleshooting notes.
 
@@ -38,7 +38,7 @@ flowchart TD
 | [09 — Namespaces](labs/09-namespaces-resource-isolation/) | Resource boundaries | Namespace, ResourceQuota, LimitRange |
 | [10 — Services & networking](labs/10-services-networking/) | Traffic routing | ClusterIP, NodePort, selectors, EndpointSlices |
 | [11 — DNS & Service Discovery](labs/11-kubernetes-dns-service-discovery/) | In-cluster name resolution | CoreDNS, Service DNS, FQDN, nslookup |
-| [12 — Kubernetes Ingress](labs/12-kubernetes-ingress/) | HTTP routing | Ingress Controller, path-based routing, rewrite-target, ConfigMaps |
+| [12 — Kubernetes Ingress](labs/12-kubernetes-ingress/) | HTTP routing | Ingress Controller, path-based routing, rewrite-target, ConfigMaps |\n| [13 — Persistent Volumes & PVCs](labs/13-persistent-volumes-pv-pvc/) | Persistent storage | StorageClass, PV/PVC binding, volume mounts, data persistence after Pod recreation |
 
 ## How Kubernetes traffic flows
 
@@ -82,7 +82,7 @@ Review manifests before applying them. Avoid broad deletion commands on a cluste
 
 ## Progress
 
-- [x] Labs 01–12 completed and documented
+- [x] Labs 01–13 completed and documented
 - [ ] Lab 13 onward: storage, scaling, monitoring, and CI/CD
 
 Diagrams are written in Mermaid and rendered directly by GitHub Markdown.
