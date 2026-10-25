@@ -2,7 +2,7 @@
 
 ![Kubernetes](https://img.shields.io/badge/Kubernetes-learning-326CE5?logo=kubernetes&logoColor=white)
 ![Minikube](https://img.shields.io/badge/Environment-Minukube%20%7C%20macOS-2F6DB3)
-![Hands-on labs](https://img.shields.io/badge/Labs-01--13-success)
+![Hands-on labs](https://img.shields.io/badge/Labs-01--14-success)
 
 A practical Kubernetes learning journal. Each lab includes manifests, commands, explanations, expected results, diagrams, and troubleshooting notes.
 
@@ -82,7 +82,7 @@ Review manifests before applying them. Avoid broad deletion commands on a cluste
 
 ## Progress
 
-- [x] Labs 01–13 completed and documented
-- [ ] Lab 13 onward: storage, scaling, monitoring, and CI/CD
+- [x] Labs 01–14 completed and documented
+- [ ] Lab 15 onward: Jobs, scaling, scheduling, monitoring, and CI/CD
 
 Diagrams are written in Mermaid and rendered directly by GitHub Markdown.
