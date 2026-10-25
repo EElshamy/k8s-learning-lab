@@ -38,7 +38,9 @@ flowchart TD
 | [09 — Namespaces](labs/09-namespaces-resource-isolation/) | Resource boundaries | Namespace, ResourceQuota, LimitRange |
 | [10 — Services & networking](labs/10-services-networking/) | Traffic routing | ClusterIP, NodePort, selectors, EndpointSlices |
 | [11 — DNS & Service Discovery](labs/11-kubernetes-dns-service-discovery/) | In-cluster name resolution | CoreDNS, Service DNS, FQDN, nslookup |
-| [12 — Kubernetes Ingress](labs/12-kubernetes-ingress/) | HTTP routing | Ingress Controller, path-based routing, rewrite-target, ConfigMaps |\n| [13 — Persistent Volumes & PVCs](labs/13-persistent-volumes-pv-pvc/) | Persistent storage | StorageClass, PV/PVC binding, volume mounts, data persistence after Pod recreation |
+| [12 — Kubernetes Ingress](labs/12-kubernetes-ingress/) | HTTP routing | Ingress Controller, path-based routing, rewrite-target, ConfigMaps |
+| [13 — Persistent Volumes & PVCs](labs/13-persistent-volumes-pv-pvc/) | Persistent storage | StorageClass, PV/PVC binding, volume mounts, data persistence after Pod recreation |
+| [14 — StatefulSets](labs/14-kubernetes-statefulsets/) | Stateful workloads | Stable Pod identities, Headless Service DNS, per-Pod PVCs, data persistence after Pod recreation |
 
 ## How Kubernetes traffic flows
 
