@@ -2,7 +2,7 @@
 
 ![Kubernetes](https://img.shields.io/badge/Kubernetes-learning-326CE5?logo=kubernetes&logoColor=white)
 ![Minikube](https://img.shields.io/badge/Environment-Minukube%20%7C%20macOS-2F6DB3)
-![Hands-on labs](https://img.shields.io/badge/Labs-01--11-success)
+![Hands-on labs](https://img.shields.io/badge/Labs-01--12-success)
 
 A practical Kubernetes learning journal. Each lab includes manifests, commands, explanations, expected results, diagrams, and troubleshooting notes.
 
@@ -20,7 +20,7 @@ flowchart TD
   H --> I["09 · Namespaces & quotas"]
   I --> J["10 · Services & networking"]
   J --> K["11 · DNS & Service Discovery"]
-  K -. next .-> L["12 · Ingress"]
+  K --> L["12 · Ingress"]
 ~~~
 
 ## Labs
@@ -38,20 +38,24 @@ flowchart TD
 | [09 — Namespaces](labs/09-namespaces-resource-isolation/) | Resource boundaries | Namespace, ResourceQuota, LimitRange |
 | [10 — Services & networking](labs/10-services-networking/) | Traffic routing | ClusterIP, NodePort, selectors, EndpointSlices |
 | [11 — DNS & Service Discovery](labs/11-kubernetes-dns-service-discovery/) | In-cluster name resolution | CoreDNS, Service DNS, FQDN, nslookup |
+| [12 — Kubernetes Ingress](labs/12-kubernetes-ingress/) | HTTP routing | Ingress Controller, path-based routing, rewrite-target, ConfigMaps |
 
 ## How Kubernetes traffic flows
 
 ~~~mermaid
 flowchart LR
-  U["Client"] --> S["Service"]
-  S --> P1["Pod A"]
-  S --> P2["Pod B"]
-  D["Deployment"] -. maintains .-> P1
-  D -. maintains .-> P2
-  L["Pod labels"] -. matched by .-> S
+  U["Client"] --> I["Ingress Controller"]
+  I --> S1["Service A"]
+  I --> S2["Service B"]
+  S1 --> P1["Pod A"]
+  S2 --> P2["Pod B"]
+  D1["Deployment A"] -. maintains .-> P1
+  D2["Deployment B"] -. maintains .-> P2
+  L1["Pod labels"] -. selected by .-> S1
+  L2["Pod labels"] -. selected by .-> S2
 ~~~
 
-A Deployment maintains the desired number of Pods. A Service offers a stable endpoint and selects backend Pods using labels. Kubernetes DNS lets workloads discover Services by name rather than depending on Pod IP addresses.
+A Deployment maintains the desired number of Pods. A Service offers a stable endpoint and selects backend Pods using labels. Kubernetes DNS lets workloads discover Services by name rather than depending on Pod IP addresses. An Ingress resource defines HTTP/HTTPS routing rules, while an Ingress Controller implements those rules and forwards requests to Services.
 
 ## Start the local environment
 
@@ -78,7 +82,7 @@ Review manifests before applying them. Avoid broad deletion commands on a cluste
 
 ## Progress
 
-- [x] Labs 01–11 completed and documented
-- [ ] Lab 12 onward: Ingress, storage, scaling, monitoring, and CI/CD
+- [x] Labs 01–12 completed and documented
+- [ ] Lab 13 onward: storage, scaling, monitoring, and CI/CD
 
 Diagrams are written in Mermaid and rendered directly by GitHub Markdown.
