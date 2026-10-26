@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: defaults-demo
+  namespace: lab-17
+spec:
+  containers:
+    - name: nginx
+      image: nginx:stable
